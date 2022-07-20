@@ -8,13 +8,8 @@ public class RedEnemy extends Enemy {
     AmericaAttack americaAttack;
 
     public RedEnemy(AmericaAttack americaAttack, float x, float y) {
-        super(x, y, 0, 0, 2F, 3F, 25, 25);
+        super(x, y, 0, 0, 2F, 3F, 25, 25, americaAttack, "src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/russia_enemy_");
         this.americaAttack = americaAttack;
-
-        for (int i = 1; i <= 6; i++) {
-            enemyImages[i-1] = americaAttack.loadImage("src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/russia_enemy_" + i + ".png");
-            enemyImages[i-1].resize(120, 0);
-        }
     }
 
     @Override
