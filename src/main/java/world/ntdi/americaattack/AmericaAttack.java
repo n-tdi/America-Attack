@@ -30,7 +30,6 @@ public class AmericaAttack extends PApplet {
     // Images
     PImage bg;
     PImage[] playerAnim =  new PImage[6]; int animationFrame = 1;
-    public PImage[] explosionAnim = new PImage[6]; int explosionFrame = 1;
     PImage gameOverlay;
     PImage button;
 
@@ -59,9 +58,6 @@ public class AmericaAttack extends PApplet {
         for (int i = 1; i <= 6; i++) {
             playerAnim[i-1]=loadImage("src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/American_eagle_" + i + ".png");
             playerAnim[i-1].resize(120, 0);
-
-            explosionAnim[i - 1] = loadImage("src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/sam_explosion_" + i + ".png");
-            explosionAnim[i - 1].resize(60, 0);
         }
         gameState = GameState.RUNNING;
         gameOverlay = loadImage("src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/GameOverImg.png");
@@ -122,17 +118,10 @@ public class AmericaAttack extends PApplet {
 
     public void enemyMovement() {
         if (bulletsQueue.size() > 0) {
-            List<Enemy> toKeep = new ArrayList<>();
-            for (Enemy e : enemiesQueue) {
-                if (e.doneBeingDead) {
-                    enemies.remove(e);
-                    toKeep.add(e);
-                }
-            }
+            enemies.removeAll(enemiesQueue);
             bullets.removeAll(bulletsQueue);
             enemiesQueue.clear();
             bulletsQueue.clear();
-            enemiesQueue.addAll(toKeep);
         }
         for (Enemy enemy : enemies) {
             enemy.moveEnemy(playerX, playerY);
@@ -141,12 +130,10 @@ public class AmericaAttack extends PApplet {
                 if (abs(bullet.x - enemy.x) < enemy.sizeX && abs(bullet.y - enemy.y) < enemy.sizeY) {
                     enemiesQueue.add(enemy);
                     bulletsQueue.add(bullet);
-                    enemy.isDead = true;
                     score += 1;
                     break;
                 }
             }
-            if (enemy.isDead) return;
             if (abs(playerX - enemy.x) < 30 && abs(playerY - enemy.y) < 30) {
                 if (score > highScore) {
                     highScore = score;
