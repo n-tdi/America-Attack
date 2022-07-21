@@ -1,14 +1,17 @@
 package world.ntdi.americaattack.enemy;
 
+import processing.core.PApplet;
 import processing.core.PImage;
 import world.ntdi.americaattack.AmericaAttack;
 
 public abstract class Enemy {
     public float x, y, vx, vy, enemySpeed, maxEnemySpeed, sizeX, sizeY;
+    public AmericaAttack americaAttack;
     public String filePath;
     public PImage[] enemyImages = new PImage[6];
+    public int animationFrame = 1;
 
-    public Enemy(float x, float y, float vx, float vy, float enemySpeed, float maxEnemySpeed, float sizeX, float sizeY, AmericaAttack americaAttack, String filePath) {
+    public Enemy(float x, float y, float vx, float vy, float enemySpeed, float maxEnemySpeed, int sizeX, int sizeY, AmericaAttack americaAttack, String filePath) {
         this.x = x;
         this.y = y;
         this.vx = vx;
@@ -17,14 +20,29 @@ public abstract class Enemy {
         this.maxEnemySpeed = maxEnemySpeed;
         this.sizeX = sizeX;
         this.sizeY = sizeY;
+        this.filePath = filePath;
+        this.americaAttack = americaAttack;
 
         for (int i = 1; i <= 6; i++) {
             enemyImages[i-1] = americaAttack.loadImage(filePath + i + ".png");
-            enemyImages[i-1].resize(120, 0);
+            enemyImages[i-1].resize(sizeX, sizeY);
         }
     }
 
-    public abstract void drawEnemy();
+    public void drawEnemy() {
+        if (americaAttack.frameCount % 5 == 0) {
+            animationFrame++;
+            animationFrame = animationFrame % 6;
+        }
+        americaAttack.imageMode(americaAttack.CENTER);
+        americaAttack.image(enemyImages[animationFrame], x, y);
+    }
 
-    public abstract void moveEnemy(float playerX, float playerY);
+    public void moveEnemy(float playerX, float playerY) {
+        float angle = PApplet.atan2(playerY - y, playerX - x);
+        vx = PApplet.cos(angle);
+        vy = PApplet.sin(angle);
+        x += vx * enemySpeed;
+        y += vy * enemySpeed;
+    };
 }

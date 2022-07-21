@@ -4,6 +4,7 @@ import processing.core.PApplet;
 import processing.core.PImage;
 import world.ntdi.americaattack.enemy.Enemy;
 import world.ntdi.americaattack.enemy.enemies.ChinaEnemy;
+import world.ntdi.americaattack.enemy.enemies.KimEnemy;
 import world.ntdi.americaattack.enemy.enemies.RedEnemy;
 import world.ntdi.americaattack.util.Direction;
 
@@ -127,25 +128,34 @@ public class AmericaAttack extends PApplet {
         int side = (int) random(0, 2);
         int side2 = (int) random(0, 2);
         if (side % 2 == 0) { // top and bottom
-            //enemies.add(new RedEnemy(random(0, width), height * (side2 % 2)));
-            List<Enemy> enemyList = new ArrayList<>(Arrays.asList(
-                    new RedEnemy(this, random(0, width), height * (side2 % 2)),
-                    new RedEnemy(this, random(0, width), height * (side2 % 2)),
-                    new RedEnemy(this, random(0, width), height * (side2 % 2)),
-                    new ChinaEnemy(this, random(0, width), height * (side2 % 2))));
-            Enemy randomEnemy = enemyList.get((int) random(0, enemyList.size()));
-            enemies.add(randomEnemy);
-        } else { // sides
-            //enemies.add(new RedEnemy(width * (side2 % 2), random(0, height)));
-            List<Enemy> enemyList = new ArrayList<>(Arrays.asList(
-                    new RedEnemy(this, width * (side2 % 2), random(0, height)),
-                    new RedEnemy(this, width * (side2 % 2), random(0, height)),
-                    new RedEnemy(this, width * (side2 % 2), random(0, height)),
-                    new ChinaEnemy(this, width * (side2 % 2), random(0, height))));
-            Enemy randomEnemy = enemyList.get((int) random(0, enemyList.size()));
-            enemies.add(randomEnemy);
+            float x = random(0, width);
+            float y = height * (side2 % 2);
+
+            enemies.add(getRandomEnemy(x, y));
+        } else { // left and right
+            float x = width * (side2 % 2);
+            float y = random(0, height);
+
+            enemies.add(getRandomEnemy(x, y));
         }
     }
+
+    public final List<Enemy> getEnemyList(float x, float y) {
+        return new ArrayList<>(Arrays.asList(
+                new RedEnemy(this, x, y),
+                new RedEnemy(this, x, y),
+                new RedEnemy(this, x, y),
+                new ChinaEnemy(this, x, y),
+                new ChinaEnemy(this, x, y),
+                new KimEnemy(this, x, y)
+        ));
+    }
+
+    public final Enemy getRandomEnemy(float x, float y) {
+        return getEnemyList(x, y).get((int) random(0, getEnemyList(x, y).size()));
+    }
+
+
 
     // Called when a key is pressed
     public void keyPressed() {
