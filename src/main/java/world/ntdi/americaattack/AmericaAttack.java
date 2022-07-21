@@ -1,12 +1,14 @@
 package world.ntdi.americaattack;
 
 import processing.core.PApplet;
+import processing.core.PFont;
 import processing.core.PImage;
 import world.ntdi.americaattack.enemy.Enemy;
 import world.ntdi.americaattack.enemy.enemies.ChinaEnemy;
 import world.ntdi.americaattack.enemy.enemies.KimEnemy;
 import world.ntdi.americaattack.enemy.enemies.RedEnemy;
 import world.ntdi.americaattack.util.Direction;
+import world.ntdi.americaattack.util.GameState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +30,17 @@ public class AmericaAttack extends PApplet {
     // Images
     PImage bg;
     PImage[] playerAnim =  new PImage[6]; int animationFrame = 1;
+    public PImage[] explosionAnim = new PImage[6]; int explosionFrame = 1;
+    PImage gameOverlay;
+    PImage button;
+
+    // Scoring
+    int score = 0;
+    int highScore = 0;
+    PFont scoreFont;
+
+    // Game state
+    GameState gameState;
 
 
     public static void main(String[] args) {
@@ -36,7 +49,7 @@ public class AmericaAttack extends PApplet {
 
     public void settings() {
         size(771, 1056);
-        enemies.add(new world.ntdi.americaattack.enemy.enemies.RedEnemy(this, random(0, width), random(0, width)));
+        enemies.add(new RedEnemy(this, random(0, width), random(0, width)));
     }
 
     public void setup() {
@@ -46,7 +59,15 @@ public class AmericaAttack extends PApplet {
         for (int i = 1; i <= 6; i++) {
             playerAnim[i-1]=loadImage("src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/American_eagle_" + i + ".png");
             playerAnim[i-1].resize(120, 0);
+
+            explosionAnim[i - 1] = loadImage("src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/sam_explosion_" + i + ".png");
+            explosionAnim[i - 1].resize(60, 0);
         }
+        gameState = GameState.RUNNING;
+        gameOverlay = loadImage("src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/GameOverImg.png");
+        button = loadImage("src/main/java/world/ntdi/americaattack/images/GlobAttackAssets/WoodButton.png");
+        gameOverlay.resize(600, 0);
+        button.resize(480, 100);
     }
 
     public void draw() {
@@ -55,13 +76,35 @@ public class AmericaAttack extends PApplet {
             animationFrame = animationFrame % 6;
         }
         drawBackground();
-        noStroke();
-        drawPlayer();
-        movement();
-        enemyMovement();
-        increaseDifficulty();
-        bulletMovement();
 
+        switch (gameState) {
+            case OVER:
+                drawGameOver();
+                break;
+
+            case RUNNING:
+                drawScore();
+                noStroke();
+                drawPlayer();
+                movement();
+                enemyMovement();
+                increaseDifficulty();
+                bulletMovement();
+                break;
+        }
+    }
+
+    public void drawGameOver() {
+        imageMode(CENTER);
+        image(gameOverlay, width / 2, height / 2);
+        fill(122, 64, 51);
+        textAlign(CENTER);
+        text("Game Over ", width / 2, height / 2 - 100);
+        text("Score: " + score, width / 2, height / 2 - 40);
+        text("High Score: " + highScore, width / 2, height / 2 + 10);
+        image(button, width / 2, height / 2 + 100);
+        fill(255, 255, 255);
+        text("Restart ", width / 2, height / 2 + 105);
     }
 
     public void drawBackground() {
@@ -78,6 +121,19 @@ public class AmericaAttack extends PApplet {
     }
 
     public void enemyMovement() {
+        if (bulletsQueue.size() > 0) {
+            List<Enemy> toKeep = new ArrayList<>();
+            for (Enemy e : enemiesQueue) {
+                if (e.doneBeingDead) {
+                    enemies.remove(e);
+                    toKeep.add(e);
+                }
+            }
+            bullets.removeAll(bulletsQueue);
+            enemiesQueue.clear();
+            bulletsQueue.clear();
+            enemiesQueue.addAll(toKeep);
+        }
         for (Enemy enemy : enemies) {
             enemy.moveEnemy(playerX, playerY);
             enemy.drawEnemy();
@@ -85,19 +141,20 @@ public class AmericaAttack extends PApplet {
                 if (abs(bullet.x - enemy.x) < enemy.sizeX && abs(bullet.y - enemy.y) < enemy.sizeY) {
                     enemiesQueue.add(enemy);
                     bulletsQueue.add(bullet);
+                    enemy.isDead = true;
+                    score += 1;
                     break;
                 }
             }
+            if (enemy.isDead) return;
             if (abs(playerX - enemy.x) < 30 && abs(playerY - enemy.y) < 30) {
-                println("game over");
+                if (score > highScore) {
+                    highScore = score;
+                }
+                gameState = GameState.OVER;
             }
         }
-        if (bulletsQueue.size() > 0) {
-            enemies.removeAll(enemiesQueue);
-            bullets.removeAll(bulletsQueue);
-            enemiesQueue.clear();
-            bulletsQueue.clear();
-        }
+
     }
 
     public void bulletMovement() {
@@ -153,6 +210,14 @@ public class AmericaAttack extends PApplet {
 
     public final Enemy getRandomEnemy(float x, float y) {
         return getEnemyList(x, y).get((int) random(0, getEnemyList(x, y).size()));
+    }
+
+    public void drawScore() {
+        scoreFont = createFont("Leelawadee UI Bold", 26, true);
+        textFont(scoreFont);
+        fill(255, 255, 255);
+        textAlign(CENTER);
+        text("Score: " + score, width - 90, 40);
     }
 
 
@@ -212,75 +277,29 @@ public class AmericaAttack extends PApplet {
     }
 
     public void mousePressed() {
-        float dx = mouseX - playerX;
-        float dy = mouseY - playerY;
-        float angle = atan2(dy, dx);
-        float vx = bulletSpeed * cos(angle);
-        float vy = bulletSpeed * sin(angle);
-        bullets.add(new Bullet(playerX, playerY, vx, vy));
+        switch (gameState) {
+            case RUNNING:
+                float dx = mouseX - playerX;
+                float dy = mouseY - playerY;
+                float angle = atan2(dy, dx);
+                float vx = bulletSpeed * cos(angle);
+                float vy = bulletSpeed * sin(angle);
+                bullets.add(new Bullet(playerX, playerY, vx, vy));
+                break;
+
+            case OVER:
+                if (mouseX > (width / 2 - 120) && mouseX < (width / 2 + 120) && mouseY > height / 2 + 100 - 25 && mouseY < (height / 2 + 100 + 25)) {
+                    for (int i = 0; i < enemies.size(); i++) {
+                        enemies.remove(i);
+                        score = 0;
+                        spawnRate = 100;
+                    }
+                    gameState = GameState.RUNNING;
+                }
+                break;
+        }
     }
 
-//    public abstract class Enemy {
-//        protected float x, y, vx, vy, enemySpeed, maxEnemySpeed;
-//
-//        public Enemy(float x, float y, float vx, float vy, float enemySpeed, float maxEnemySpeed) {
-//            this.x = x;
-//            this.y = y;
-//            this.vx = vx;
-//            this.vy = vy;
-//            this.enemySpeed = enemySpeed;
-//            this.maxEnemySpeed = maxEnemySpeed;
-//        }
-//
-//        public abstract void drawEnemy();
-//
-//        public abstract void moveEnemy(float playerX, float playerY);
-//    }
-//
-//    public class RedEnemy extends Enemy {
-//        public RedEnemy(float x, float y) {
-//            super(x, y, 0, 0, 2F, 3F);
-//        }
-//
-//        @Override
-//        public void drawEnemy() {
-//            rectMode(CENTER);
-//            fill(30, 120, 199);
-//            rect(x, y, 25, 25);
-//        }
-//
-//        @Override
-//        public void moveEnemy(float playerX, float playerY) {
-//            float angle = atan2(playerY - y, playerX - x);
-//            vx = cos(angle);
-//            vy = sin(angle);
-//            x += vx * enemySpeed;
-//            y += vy * enemySpeed;
-//        }
-//    }
-//
-//    public class BlackEnemy extends Enemy {
-//        public BlackEnemy(float x, float y) {
-//            super(x, y, 0, 0, 4F, 5F);
-//        }
-//
-//        @Override
-//        public void drawEnemy() {
-//            rectMode(CENTER);
-//            fill(10, 10, 10);
-//            rect(x, y, 40, 40);
-//        }
-//
-//        @Override
-//        public void moveEnemy(float playerX, float playerY) {
-//            float angle = atan2(playerY - y, playerX - x);
-//            vx = cos(angle);
-//            vy = sin(angle);
-//            x += vx * enemySpeed;
-//            y += vy * enemySpeed;
-//        }
-//    }
-//
     public class Bullet {
         float x, y, vx, vy;
 
